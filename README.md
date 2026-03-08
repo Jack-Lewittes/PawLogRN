@@ -1,4 +1,4 @@
-#What's in the app? 
+# What's in the app? 
 <br>
 ## A mobile app to track your puppies activities from potty to training to nap time
 <br>
