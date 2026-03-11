@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import DateTimePicker from '@react-native-community/datetimepicker';
 import { useApp } from '../context/AppContext';
 import { updateActivity } from '../storage/firestore';
 import { getConfig } from '../models/ActivityType';
 import { getDuration } from '../utils/dateUtils';
+import DateTimePickerRow from './DateTimePickerRow';
 
 export default function EndTimedActivityModal({ visible, entry, onClose }) {
   const { householdId } = useApp();
@@ -30,9 +30,10 @@ export default function EndTimedActivityModal({ visible, entry, onClose }) {
           <TouchableOpacity onPress={onClose}><Text style={styles.cancel}>Cancel</Text></TouchableOpacity>
           <Text style={styles.title}>End {cfg.displayName}</Text>
           <TouchableOpacity onPress={handleEnd}>
-            <Text style={[styles.save, { color: cfg.color }]}>End {cfg.displayName}</Text>
+            <Text style={[styles.save, { color: cfg.color }]}>Save</Text>
           </TouchableOpacity>
         </View>
+
         <View style={styles.infoCard}>
           <Text style={{ fontSize: 36 }}>{cfg.emoji}</Text>
           <View style={{ marginLeft: 12 }}>
@@ -41,11 +42,26 @@ export default function EndTimedActivityModal({ visible, entry, onClose }) {
             {duration && <Text style={[styles.infoElapsed, { color: cfg.color }]}>Elapsed: {duration}</Text>}
           </View>
         </View>
+
         <Text style={styles.sectionLabel}>END TIME</Text>
-        <View style={styles.pickerCard}>
-          <DateTimePicker value={endTime} mode="datetime" display="spinner"
-            minimumDate={startDate} maximumDate={new Date()}
-            onChange={(_, d) => { if (d) setEndTime(d); }} style={{ height: 180 }} />
+        <View style={styles.card}>
+          <DateTimePickerRow
+            label="Date"
+            value={endTime}
+            onChange={setEndTime}
+            mode="date"
+            minimumDate={startDate}
+            maximumDate={new Date()}
+          />
+          <DateTimePickerRow
+            label="Time"
+            value={endTime}
+            onChange={setEndTime}
+            mode="time"
+            minimumDate={startDate}
+            maximumDate={new Date()}
+            showSeparator
+          />
         </View>
       </View>
     </Modal>
@@ -69,5 +85,5 @@ const styles = StyleSheet.create({
   infoSub: { fontSize: 14, color: '#8E8E93', marginTop: 2 },
   infoElapsed: { fontSize: 13, marginTop: 4, fontWeight: '500' },
   sectionLabel: { fontSize: 13, fontWeight: '600', color: '#8E8E93', marginHorizontal: 20, marginBottom: 6 },
-  pickerCard: { backgroundColor: '#fff', marginHorizontal: 16, borderRadius: 12, overflow: 'hidden' },
+  card: { backgroundColor: '#fff', marginHorizontal: 16, borderRadius: 12, overflow: 'hidden' },
 });

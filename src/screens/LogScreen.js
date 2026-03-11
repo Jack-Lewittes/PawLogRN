@@ -3,15 +3,35 @@ import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView,
 } from 'react-native';
 import { useApp } from '../context/AppContext';
+import { createActivity } from '../storage/firestore';
 import { formatShortDate, startOfDay, addDays } from '../utils/dateUtils';
 import { ALL_TYPES, getConfig } from '../models/ActivityType';
 import LogTimelineRow from '../components/LogTimelineRow';
 import EndTimedActivityModal from '../components/EndTimedActivityModal';
+import ActivityFAB from '../components/ActivityFAB';
+import AddFeedingModal from '../components/AddFeedingModal';
+import RetroActivityModal from '../components/RetroActivityModal';
+import StartTimedActivityModal from '../components/StartTimedActivityModal';
 
 export default function LogScreen() {
-  const { selectedDog, activities, users } = useApp();
+  const { householdId, selectedDog, currentUser, activities, users } = useApp();
   const [selectedDate, setSelectedDate] = useState(startOfDay(new Date()));
   const [endingActivity, setEndingActivity] = useState(null);
+  const [showAddFeeding, setShowAddFeeding] = useState(false);
+  const [showRetro, setShowRetro] = useState(false);
+  const [startTimedType, setStartTimedType] = useState(null);
+
+  async function addNow(type) {
+    if (!householdId || !selectedDog || !currentUser) return;
+    const cfg = getConfig(type);
+    if (cfg.isTimedActivity) {
+      setStartTimedType(type);
+    } else if (type === 'feeding') {
+      setShowAddFeeding(true);
+    } else {
+      await createActivity(householdId, { type, dogId: selectedDog.id, userId: currentUser.id });
+    }
+  }
 
   const todayDate = startOfDay(new Date());
   const isSelectedToday = selectedDate.getTime() === todayDate.getTime();
@@ -102,10 +122,25 @@ export default function LogScreen() {
         </ScrollView>
       )}
 
-      <EndTimedActivityModal
-        visible={!!endingActivity}
-        entry={endingActivity}
-        onClose={() => setEndingActivity(null)}
+      <ActivityFAB onSelect={addNow} onRetro={() => setShowRetro(true)} />
+
+      <EndTimedActivityModal visible={!!endingActivity} entry={endingActivity} onClose={() => setEndingActivity(null)} />
+      <AddFeedingModal visible={showAddFeeding} onClose={() => setShowAddFeeding(false)} />
+      <RetroActivityModal visible={showRetro} onClose={() => setShowRetro(false)} />
+      <StartTimedActivityModal
+        visible={!!startTimedType}
+        type={startTimedType}
+        onStart={async (startTime) => {
+          setStartTimedType(null);
+          if (!householdId || !selectedDog || !currentUser) return;
+          await createActivity(householdId, {
+            type: startTimedType,
+            timestamp: startTime.toISOString(),
+            dogId: selectedDog.id,
+            userId: currentUser.id,
+          });
+        }}
+        onCancel={() => setStartTimedType(null)}
       />
     </SafeAreaView>
   );

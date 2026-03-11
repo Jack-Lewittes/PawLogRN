@@ -11,6 +11,7 @@ import AddNoteModal from '../components/AddNoteModal';
 import AddFeedingModal from '../components/AddFeedingModal';
 import EndTimedActivityModal from '../components/EndTimedActivityModal';
 import RetroActivityModal from '../components/RetroActivityModal';
+import StartTimedActivityModal from '../components/StartTimedActivityModal';
 
 export default function HomeScreen() {
   const { householdId, selectedDog, currentUser, activities, users } = useApp();
@@ -19,6 +20,7 @@ export default function HomeScreen() {
   const [showAddFeeding, setShowAddFeeding] = useState(false);
   const [showRetro, setShowRetro] = useState(false);
   const [endingActivity, setEndingActivity] = useState(null);
+  const [startTimedType, setStartTimedType] = useState(null); // 'nap' | 'training' | null
 
   // Filter from live Firestore data — no manual refreshes needed
   const todayActivities = useMemo(() => {
@@ -45,7 +47,7 @@ export default function HomeScreen() {
     const cfg = getConfig(type);
 
     if (cfg.isTimedActivity) {
-      await createActivity(householdId, { type, dogId: selectedDog.id, userId: currentUser.id });
+      setStartTimedType(type); // open start-time picker first
     } else if (type === 'feeding') {
       setShowAddFeeding(true);
     } else {
@@ -68,9 +70,10 @@ export default function HomeScreen() {
 
       {isEmpty ? (
         <View style={styles.empty}>
-          <Text style={styles.emptyIcon}>🐾</Text>
+          <Text style={styles.emptyPaws}>🐾</Text>
+          <Text style={styles.emptyDogName}>{selectedDog?.name || 'PawLog'}</Text>
           <Text style={styles.emptyTitle}>No activities yet today</Text>
-          <Text style={styles.emptySub}>Tap + to log an activity</Text>
+          <Text style={styles.emptySub}>Tap  ＋  to log an activity</Text>
         </View>
       ) : (
         <FlatList
@@ -81,9 +84,15 @@ export default function HomeScreen() {
           )}
           contentContainerStyle={{ paddingBottom: 120 }}
           ListHeaderComponent={
-            <Text style={styles.header}>
-              {todayActivities.length} activit{todayActivities.length === 1 ? 'y' : 'ies'} today
-            </Text>
+            <View>
+              <View style={styles.dogHeader}>
+                <Text style={styles.dogHeaderEmoji}>{selectedDog?.petEmoji || '🐶'}</Text>
+                <View>
+                  <Text style={styles.dogHeaderName}>{selectedDog?.name}</Text>
+                  <Text style={styles.dogHeaderSub}>{todayActivities.length} activit{todayActivities.length === 1 ? 'y' : 'ies'} today</Text>
+                </View>
+              </View>
+            </View>
           }
         />
       )}
@@ -94,16 +103,39 @@ export default function HomeScreen() {
       <AddFeedingModal visible={showAddFeeding} onClose={() => setShowAddFeeding(false)} />
       <EndTimedActivityModal visible={!!endingActivity} entry={endingActivity} onClose={() => setEndingActivity(null)} />
       <RetroActivityModal visible={showRetro} onClose={() => setShowRetro(false)} />
+      <StartTimedActivityModal
+        visible={!!startTimedType}
+        type={startTimedType}
+        onStart={async (startTime) => {
+          setStartTimedType(null);
+          if (!householdId || !selectedDog || !currentUser) return;
+          await createActivity(householdId, {
+            type: startTimedType,
+            timestamp: startTime.toISOString(),
+            dogId: selectedDog.id,
+            userId: currentUser.id,
+          });
+        }}
+        onCancel={() => setStartTimedType(null)}
+      />
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F2F2F7' },
-  empty: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 10 },
-  emptyIcon: { fontSize: 56, opacity: 0.35 },
-  emptyTitle: { fontSize: 18, color: '#8E8E93' },
+  empty: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },
+  emptyPaws: { fontSize: 80, opacity: 0.85 },
+  emptyDogName: { fontSize: 32, fontWeight: '800', color: '#1C1C1E', marginTop: 4 },
+  emptyTitle: { fontSize: 17, color: '#8E8E93' },
   emptySub: { fontSize: 15, color: '#8E8E93' },
+  dogHeader: {
+    flexDirection: 'row', alignItems: 'center', gap: 14,
+    paddingHorizontal: 16, paddingTop: 18, paddingBottom: 10,
+  },
+  dogHeaderEmoji: { fontSize: 42 },
+  dogHeaderName: { fontSize: 22, fontWeight: '800', color: '#1C1C1E' },
+  dogHeaderSub: { fontSize: 13, color: '#8E8E93', fontWeight: '600', marginTop: 1 },
   header: {
     fontSize: 13, fontWeight: '600', color: '#8E8E93',
     paddingHorizontal: 16, paddingTop: 16, paddingBottom: 8, textTransform: 'uppercase',

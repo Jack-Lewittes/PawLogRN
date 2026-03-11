@@ -7,10 +7,19 @@
     "userInterfaceStyle": "light",
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.pawlog.app"
+      "bundleIdentifier": "com.pawlog.app",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "package": "com.pawlog.app"
+    },
+    "plugins": [],
+    "extra": {
+      "eas": {
+        "projectId": "fd6e47fd-a3d9-48f6-aa90-7448ed8b1daa"
+      }
     }
   }
 }

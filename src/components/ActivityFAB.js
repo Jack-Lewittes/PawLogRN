@@ -16,16 +16,13 @@ export default function ActivityFAB({ onSelect, onRetro }) {
   }
 
   function handleSelect(type) {
-    toggle();
-    setTimeout(() => onSelect(type), 200);
+    onSelect(type);
   }
 
   function handleRetro() {
-    toggle();
-    setTimeout(() => onRetro(), 200);
+    onRetro();
   }
 
-  const rotate = anim.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '45deg'] });
   const menuOpacity = anim.interpolate({ inputRange: [0, 1], outputRange: [0, 1] });
 
   // All menu items: retro + activity types
@@ -67,7 +64,7 @@ export default function ActivityFAB({ onSelect, onRetro }) {
 
         {/* Main button */}
         <TouchableOpacity onPress={toggle} style={styles.fab} activeOpacity={0.9}>
-          <Animated.Text style={[styles.fabIcon, { transform: [{ rotate }] }]}>＋</Animated.Text>
+          <Text style={styles.fabIcon}>{open ? '×' : '＋'}</Text>
         </TouchableOpacity>
       </View>
     </>

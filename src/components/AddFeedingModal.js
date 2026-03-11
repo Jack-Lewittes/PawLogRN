@@ -1,12 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Modal, View, Text, TextInput, TouchableOpacity,
-  ScrollView, StyleSheet, KeyboardAvoidingView, Platform, Switch,
+  ScrollView, StyleSheet, KeyboardAvoidingView, Platform,
 } from 'react-native';
-import DateTimePicker from '@react-native-community/datetimepicker';
 import { useApp } from '../context/AppContext';
 import { createActivity } from '../storage/firestore';
 import { MEAL_TYPES } from '../models/ActivityType';
+import DateTimePickerRow from './DateTimePickerRow';
 
 export default function AddFeedingModal({ visible, onClose }) {
   const { householdId, selectedDog, currentUser } = useApp();
@@ -14,19 +14,20 @@ export default function AddFeedingModal({ visible, onClose }) {
   const [foodType, setFoodType] = useState('');
   const [feedingAmount, setFeedingAmount] = useState('');
   const [notes, setNotes] = useState('');
-  const [useCustomTime, setUseCustomTime] = useState(false);
-  const [customTime, setCustomTime] = useState(new Date());
+  const [feedTime, setFeedTime] = useState(new Date());
 
-  function reset() {
-    setMealType('Breakfast'); setFoodType(''); setFeedingAmount('');
-    setNotes(''); setUseCustomTime(false); setCustomTime(new Date());
-  }
+  useEffect(() => {
+    if (visible) {
+      setMealType('Breakfast'); setFoodType(''); setFeedingAmount('');
+      setNotes(''); setFeedTime(new Date());
+    }
+  }, [visible]);
 
   async function save() {
     if (!householdId || !selectedDog || !currentUser) return;
     await createActivity(householdId, {
       type: 'feeding',
-      timestamp: useCustomTime ? customTime.toISOString() : new Date().toISOString(),
+      timestamp: feedTime.toISOString(),
       notes: notes.trim() || null,
       dogId: selectedDog.id,
       userId: currentUser.id,
@@ -34,15 +35,14 @@ export default function AddFeedingModal({ visible, onClose }) {
       foodType: foodType.trim() || null,
       feedingAmount: feedingAmount.trim() || null,
     });
-    reset();
     onClose();
   }
 
   return (
-    <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => { reset(); onClose(); }}>
+    <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => { reset(); onClose(); }}><Text style={styles.cancel}>Cancel</Text></TouchableOpacity>
+          <TouchableOpacity onPress={onClose}><Text style={styles.cancel}>Cancel</Text></TouchableOpacity>
           <Text style={styles.title}>Log Feeding</Text>
           <TouchableOpacity onPress={save}><Text style={styles.save}>Save</Text></TouchableOpacity>
         </View>
@@ -57,28 +57,26 @@ export default function AddFeedingModal({ visible, onClose }) {
               ))}
             </ScrollView>
           </View>
+
           <Text style={styles.sectionLabel}>FOOD DETAILS</Text>
           <View style={styles.card}>
             <TextInput style={styles.input} placeholder="Food type (e.g. dry kibble)" placeholderTextColor="#8E8E93" value={foodType} onChangeText={setFoodType} />
             <View style={styles.sep} />
             <TextInput style={styles.input} placeholder="Amount (e.g. 1 cup)" placeholderTextColor="#8E8E93" value={feedingAmount} onChangeText={setFeedingAmount} />
           </View>
+
           <Text style={styles.sectionLabel}>NOTES (OPTIONAL)</Text>
           <View style={styles.card}>
             <TextInput style={[styles.input, { minHeight: 70, textAlignVertical: 'top' }]}
               placeholder="Add a note…" placeholderTextColor="#8E8E93" multiline value={notes} onChangeText={setNotes} />
           </View>
+
           <Text style={styles.sectionLabel}>TIME</Text>
           <View style={styles.card}>
-            <View style={styles.row}>
-              <Text style={styles.rowLabel}>Use custom time</Text>
-              <Switch value={useCustomTime} onValueChange={setUseCustomTime} />
-            </View>
-            {useCustomTime && (
-              <DateTimePicker value={customTime} mode="datetime" display="spinner" maximumDate={new Date()}
-                onChange={(_, d) => { if (d) setCustomTime(d); }} style={{ height: 180 }} />
-            )}
+            <DateTimePickerRow label="Date" value={feedTime} onChange={setFeedTime} mode="date" maximumDate={new Date()} />
+            <DateTimePickerRow label="Time" value={feedTime} onChange={setFeedTime} mode="time" showSeparator />
           </View>
+
           <View style={{ height: 40 }} />
         </ScrollView>
       </KeyboardAvoidingView>
@@ -103,6 +101,4 @@ const styles = StyleSheet.create({
   mealChipTextActive: { color: '#fff' },
   input: { padding: 14, fontSize: 16, color: '#1C1C1E' },
   sep: { height: StyleSheet.hairlineWidth, backgroundColor: '#C6C6C8', marginLeft: 14 },
-  row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 14 },
-  rowLabel: { fontSize: 16, color: '#1C1C1E' },
 });

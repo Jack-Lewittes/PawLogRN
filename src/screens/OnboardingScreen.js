@@ -1,14 +1,16 @@
 import React, { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView,
-  StyleSheet, KeyboardAvoidingView, Platform, Alert, ActivityIndicator,
+  StyleSheet, KeyboardAvoidingView, Platform, Alert, ActivityIndicator, Share,
 } from 'react-native';
 import { useApp } from '../context/AppContext';
+import DateTimePickerRow from '../components/DateTimePickerRow';
 import {
   createHousehold, findHouseholdByCode, createDog, createUser,
 } from '../storage/firestore';
 
 const AVATAR_COLORS = ['#007AFF', '#34C759', '#FF9500', '#FF3B30', '#AF52DE', '#5856D6', '#FF2D55', '#FF6B35'];
+const PET_EMOJIS = ['🐶','🐕','🦴','🐩','🐕‍🦺','🐈','🐱','🐰','🐹','🐻','🦁','🐯','🐨','🐼','🦊','🐴','🐢','🐠'];
 
 export default function OnboardingScreen() {
   const { signIn } = useApp();
@@ -19,7 +21,8 @@ export default function OnboardingScreen() {
 
   // Create flow
   const [dogName, setDogName] = useState('');
-  const [dogBirthDate, setDogBirthDate] = useState('');
+  const [petEmoji, setPetEmoji] = useState('🐶');
+  const [dogBirthDate, setDogBirthDate] = useState(null); // Date object or null
   const [joinCode, setJoinCode] = useState('');     // shown after household created
   const [householdId, setHouseholdId] = useState(null);
 
@@ -37,12 +40,9 @@ export default function OnboardingScreen() {
     setLoading(true);
     try {
       const household = await createHousehold();
-      let birthDate = null;
-      if (dogBirthDate.trim()) {
-        const d = new Date(dogBirthDate.trim());
-        if (!isNaN(d)) birthDate = d.toISOString();
-      }
-      await createDog(household.id, { name: dogName.trim(), birthDate });
+      const birthDate = dogBirthDate ? dogBirthDate.toISOString() : null;
+      await createDog(household.id, { name: dogName.trim(), birthDate, petEmoji });
+      setPetEmoji('🐶');
       setHouseholdId(household.id);
       setJoinCode(household.joinCode);
       setStep('show-code');
@@ -119,6 +119,18 @@ export default function OnboardingScreen() {
         {step === 'create-dog' && (
           <>
             <Text style={styles.heading}>Tell us about your dog</Text>
+            <Text style={{ fontSize: 72, textAlign: 'center', marginBottom: 8 }}>{petEmoji}</Text>
+            <View style={styles.field}>
+              <Text style={styles.label}>Pick an emoji for your pet</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingVertical: 8 }}>
+                {PET_EMOJIS.map(e => (
+                  <TouchableOpacity key={e} onPress={() => setPetEmoji(e)}
+                    style={[styles.emojiOption, petEmoji === e && styles.emojiOptionActive]}>
+                    <Text style={{ fontSize: 28 }}>{e}</Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
             <View style={styles.field}>
               <Text style={styles.label}>Dog's Name *</Text>
               <TextInput style={styles.input} placeholder="e.g. Buddy" placeholderTextColor="#8E8E93"
@@ -126,8 +138,25 @@ export default function OnboardingScreen() {
             </View>
             <View style={styles.field}>
               <Text style={styles.label}>Birthday (optional)</Text>
-              <TextInput style={styles.input} placeholder="YYYY-MM-DD" placeholderTextColor="#8E8E93"
-                value={dogBirthDate} onChangeText={setDogBirthDate} keyboardType="numbers-and-punctuation" />
+              <View style={{ backgroundColor: '#fff', borderRadius: 12, overflow: 'hidden' }}>
+                <DateTimePickerRow
+                  label={dogBirthDate
+                    ? dogBirthDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+                    : 'Tap to set birthday'}
+                  value={dogBirthDate || new Date()}
+                  onChange={d => setDogBirthDate(d)}
+                  mode="date"
+                  maximumDate={new Date()}
+                />
+                {dogBirthDate && (
+                  <TouchableOpacity
+                    style={{ padding: 10, alignItems: 'center', borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: '#E5E5EA' }}
+                    onPress={() => setDogBirthDate(null)}
+                  >
+                    <Text style={{ color: '#FF3B30', fontSize: 14 }}>Clear</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
             </View>
             <View style={styles.btnRow}>
               <TouchableOpacity style={styles.backBtn} onPress={() => setStep('choose')}>
@@ -155,6 +184,10 @@ export default function OnboardingScreen() {
             <View style={styles.codeBox}>
               <Text style={styles.codeText}>{joinCode}</Text>
             </View>
+
+            <TouchableOpacity style={styles.copyBtn} onPress={() => Share.share({ message: joinCode })}>
+              <Text style={styles.copyBtnText}>📋  Share / Copy Code</Text>
+            </TouchableOpacity>
 
             <Text style={styles.hint}>They'll enter this code when they first open PawLog.</Text>
 
@@ -268,4 +301,11 @@ const styles = StyleSheet.create({
   colorRow: { flexDirection: 'row', gap: 12, flexWrap: 'wrap' },
   colorDot: { width: 36, height: 36, borderRadius: 18 },
   colorDotActive: { borderWidth: 3, borderColor: '#1C1C1E' },
+  copyBtn: {
+    backgroundColor: '#E8F0FE', borderRadius: 12, padding: 14,
+    alignItems: 'center', width: '100%', marginTop: 8,
+  },
+  copyBtnText: { fontSize: 16, fontWeight: '600', color: '#007AFF' },
+  emojiOption: { padding: 8, borderRadius: 12, borderWidth: 2, borderColor: 'transparent' },
+  emojiOptionActive: { borderColor: '#007AFF', backgroundColor: '#EBF3FF' },
 });

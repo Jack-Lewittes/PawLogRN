@@ -70,13 +70,14 @@ export async function findHouseholdByCode(code) {
 
 // ── Dogs ──────────────────────────────────────────────────────────────────────
 
-export async function createDog(householdId, { name, birthDate }) {
+export async function createDog(householdId, { name, birthDate, petEmoji }) {
   const ref = await addDoc(colRef(householdId, 'dogs'), {
     name,
     birthDate: birthDate || null,
+    petEmoji: petEmoji || '🐶',
     createdAt: new Date().toISOString(),
   });
-  return { id: ref.id, name, birthDate: birthDate || null };
+  return { id: ref.id, name, birthDate: birthDate || null, petEmoji: petEmoji || '🐶' };
 }
 
 export async function updateDog(householdId, dog) {
@@ -140,6 +141,24 @@ export async function deleteActivity(householdId, activityId) {
 
 export function subscribeToActivities(householdId, callback) {
   return onSnapshot(colRef(householdId, 'activities'), snap => {
+    callback(snap2arr(snap));
+  });
+}
+
+// ── Vaccines ──────────────────────────────────────────────────────────────────
+
+export async function createVaccine(householdId, { dogId, name, date, notes }) {
+  const data = { dogId, name, date, notes: notes || null, createdAt: new Date().toISOString() };
+  const ref = await addDoc(colRef(householdId, 'vaccines'), data);
+  return { id: ref.id, ...data };
+}
+
+export async function deleteVaccine(householdId, vaccineId) {
+  await deleteDoc(docRef(householdId, 'vaccines', vaccineId));
+}
+
+export function subscribeToVaccines(householdId, callback) {
+  return onSnapshot(colRef(householdId, 'vaccines'), snap => {
     callback(snap2arr(snap));
   });
 }

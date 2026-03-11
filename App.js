@@ -34,13 +34,6 @@ function AppContent() {
       <Tab.Navigator
         screenOptions={({ route }) => ({
           tabBarIcon: ({ focused, color, size }) => {
-            const icons = {
-              Home: focused ? 'paw' : 'paw-outline',
-              Log: focused ? 'list' : 'list-outline',
-              Profile: focused ? 'dog' : 'dog-outline',
-              Settings: focused ? 'settings' : 'settings-outline',
-            };
-            // 'dog' isn't in Ionicons — use 'heart' for profile
             const iconMap = {
               Home: focused ? 'paw' : 'paw-outline',
               Log: focused ? 'list' : 'list-outline',
@@ -52,13 +45,15 @@ function AppContent() {
           tabBarActiveTintColor: '#007AFF',
           tabBarInactiveTintColor: '#8E8E93',
           headerShown: true,
-          headerLargeTitle: route.name === 'Home',
         })}
       >
         <Tab.Screen
           name="Home"
           component={HomeScreen}
-          options={{ title: selectedDog?.name || 'PawLog', headerTitle: selectedDog?.name || 'PawLog' }}
+          options={{
+            title: 'Home',
+            headerShown: false,  // hide nav header — we use in-screen header
+          }}
         />
         <Tab.Screen name="Log" component={LogScreen} options={{ title: 'Log' }} />
         <Tab.Screen name="Profile" component={ProfileScreen} options={{ title: 'Profile' }} />

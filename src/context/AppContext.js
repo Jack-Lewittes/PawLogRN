@@ -5,6 +5,7 @@ import {
   subscribeToUsers,
   subscribeToActivities,
   subscribeToWeights,
+  subscribeToVaccines,
 } from '../storage/firestore';
 
 const AppContext = createContext(null);
@@ -19,6 +20,7 @@ export function AppProvider({ children }) {
   const [users, setUsers] = useState([]);
   const [activities, setActivities] = useState([]);
   const [weights, setWeights] = useState([]);
+  const [vaccines, setVaccines] = useState([]);
 
   const [isLoadingDevice, setIsLoadingDevice] = useState(true);
   const [isLoadingData, setIsLoadingData] = useState(false);
@@ -40,7 +42,7 @@ export function AppProvider({ children }) {
 
     setIsLoadingData(true);
     let initialised = 0;
-    const total = 4;
+    const total = 5;
 
     function onReady() {
       initialised++;
@@ -52,6 +54,7 @@ export function AppProvider({ children }) {
       subscribeToUsers(householdId, data => { setUsers(data); onReady(); }),
       subscribeToActivities(householdId, data => { setActivities(data); onReady(); }),
       subscribeToWeights(householdId, data => { setWeights(data); onReady(); }),
+      subscribeToVaccines(householdId, data => { setVaccines(data); onReady(); }),
     ];
 
     // Tear down listeners if the household ever changes
@@ -85,6 +88,7 @@ export function AppProvider({ children }) {
       users,
       activities,
       weights,
+      vaccines,
       selectedDog,
       currentUser,
       isLoading,
